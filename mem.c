@@ -38,16 +38,16 @@ int main(void)
           char line [ 128 ]; // O qualsevol altre màxim de mida de linia
           while ( fgets ( line, sizeof line, infile ) != NULL ) /* read a line */
           {
-               char *p, *pf, *tipus ;
+               char *p, *pf, *tipus ; // p = pàgina inicial, pf = pàgina final 
                p = strtok(line,"-"); // strtok guarda en p la linia fins al -
-             printf("\nEl segment va de: %s ",p);
+               printf("\nEl segment va de: %s ",p);
                pf = strtok(NULL," ");
-             printf("a: %s ",pf);
-              unsigned long base = strtol(p,NULL,16);
-               base=base/page_size;
-               //printf("En la pagina: %lu Que es el PFN: ",base);
-             printf("primer PFN: ");
-               base=base*8; //Cada pàgina ocupa 64 bits o 8 bytes
+               printf("a: %s ",pf);
+               
+	       unsigned long base = strtol(p,NULL,16);
+               unsigned long base_map=(base/page_size)*8; // Ara necessite buscar la base en el pagemap  
+	       // i Cada pàgina ocupa 64 bits o 8 bytes
+               printf("primer PFN: ");
                long long my_record;
                fseek(pagemap,base,SEEK_SET);
                fread(&my_record,sizeof(long long),1,pagemap);
@@ -68,7 +68,21 @@ int main(void)
             tipus = strtok(NULL,""); // El funcionament de strtok necessita NULL en la següent cridada
             if (strstr(tipus, "stack") != NULL) { //busca stack o heap en la línia p
                 printf(" (pila)"); // com que la pila creix cap a baix, la primera pàgina normalment no té res
-            }
+                unsigned long i = base;
+		unsigned long k = strtol(pf,NULL,16);
+		printf("\n La pila te una mida de: %lx bytes",(k-i));
+
+		for(i;i<=k;i=i+page_size){
+		 //   printf("\n   %lx",i);
+		    unsigned long base_pila = (i/page_size)*8;
+                    long long pila_record;
+		    fseek(pagemap,base_pila,SEEK_SET);
+                    fread(&pila_record,sizeof(long long),1,pagemap);
+		    if(pila_record != 0x600000000000000) 
+			    printf("  %lx: %llx \n",i,pila_record); // mostra long long en hexadecimal
+
+		}
+	    }
             if (strstr(tipus, "heap") != NULL) {
                 printf(" (monticle)");
             }
